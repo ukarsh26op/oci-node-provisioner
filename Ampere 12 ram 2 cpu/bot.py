@@ -33,7 +33,7 @@ if not public_ssh_key or public_ssh_key.strip() == "":
     exit(1)
 
 # Availability Domains to cycle through
-ads = ["AP-MUMBAI-1-AD-1"]
+ads = ["gInZ:AP-MUMBAI-1-AD-1"]
 
 total_attempts = 60 
 
