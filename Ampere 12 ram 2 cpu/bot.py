@@ -43,7 +43,7 @@ except Exception as e:
     # Fallback to standard Mumbai domain layout if API check fails
     ads = ["AP-MUMBAI-1-AD-1"]
 
-total_attempts = 60 
+total_attempts = 1440
 
 for i in range(1, total_attempts + 1):
     current_ad = ads[(i - 1) % len(ads)]
