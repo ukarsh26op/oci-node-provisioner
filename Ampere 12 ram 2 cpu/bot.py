@@ -16,6 +16,7 @@ config = {
 
 try:
     compute_client = oci.core.ComputeClient(config)
+    identity_client = oci.identity.IdentityClient(config)
     print("OCI Authentication Successful. Initializing loop sequence...")
 except Exception as e:
     print(f"Authentication Failed: {e}")
@@ -32,8 +33,15 @@ if not public_ssh_key or public_ssh_key.strip() == "":
     print("CRITICAL ERROR: OCI_PUBLIC_SSH_KEY is empty or missing from your secrets!")
     exit(1)
 
-# Availability Domains to cycle through
-ads = ["gInZ:AP-MUMBAI-1-AD-1"]
+# Programmatically fetch your account's exact Availability Domain string
+try:
+    ad_response = identity_client.list_availability_domains(compartment_id=compartment_id)
+    ads = [ad.name for ad in ad_response.data]
+    print(f"Detected Account Availability Domains: {ads}")
+except Exception as e:
+    print(f"Failed to fetch Availability Domains automatically: {e}")
+    # Fallback to standard Mumbai domain layout if API check fails
+    ads = ["AP-MUMBAI-1-AD-1"]
 
 total_attempts = 60 
 
@@ -48,8 +56,8 @@ for i in range(1, total_attempts + 1):
             availability_domain=current_ad,
             shape="VM.Standard.A1.Flex",
             shape_config=oci.core.models.LaunchInstanceShapeConfigDetails(
-                ocpus=2,
-                memory_in_gbs=12
+                ocpus=2,            # Strictly integer format
+                memory_in_gbs=12    # Strictly integer format
             ),
             source_details=oci.core.models.InstanceSourceViaImageDetails(
                 source_type="image",
@@ -73,10 +81,10 @@ for i in range(1, total_attempts + 1):
             exit(0)
             
     except oci.exceptions.ServiceError as e:
-        if "Out of host capacity" in str(e) or e.status == 500:
+        if "Out of host capacity" in str(e) or e.status == 500 or "OutofHostCapacity" in str(e):
             print(f"-> Capacity Unavailable. Resting 60 seconds...")
         else:
-            print(f"-> API Error: {e.message}")
+            print(f"-> API Error Status {e.status}: {e.message}")
             
     if i < total_attempts:
         time.sleep(60)
